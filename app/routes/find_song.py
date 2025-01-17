@@ -2,26 +2,25 @@ import os
 import uuid
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Optional
-from ..schemas.music import MusicInput, MusicOutput
+from ..schemas.music import MusicOutput
 from ..services.music_service import (
-    fetch_music_data,
     recognize_song_via_shazam,
     get_related_songs
 )
 
 router = APIRouter()
 
-# @router.get("/", response_model=Optional[MusicOutput])
-# async def get_music_data(title: str):
-#     """
-#     Example endpoint to get music data by title.
-#     """
-#     data = await fetch_music_data(title)
-#     if not data:
-#         raise HTTPException(status_code=404, detail="Music data not found.")
-#     return data
+@router.get("/")
+async def get_music_data():
+    """
+    Example endpoint to get music data by title.
+    """
+    # data = await fetch_music_data(title)
+    # if not data:
+    #     raise HTTPException(status_code=404, detail="Music data not found.")
+    return {"response": "TESTING"}
 
-@router.post("/recognize")
+@router.post("/")
 async def recognize_song(file: UploadFile = File(...)):
     """
     Receives an audio file from the client, saves it temporarily,
@@ -55,30 +54,13 @@ async def recognize_song(file: UploadFile = File(...)):
     if os.path.exists(temp_filepath):
         os.remove(temp_filepath)
 
-    # 6. Extract track ID from the result
-    #    The exact structure of recognition_result can vary depending on Shazam response
-    matches = recognition_result.get("matches", [])
-    if not matches:
-        raise HTTPException(status_code=404, detail="No matches found in Shazam response.")
+    related_tracks = []
 
-    track_id_str = matches[0].get("id", "")
-    if not track_id_str:
-        raise HTTPException(status_code=404, detail="No track ID found in Shazam response.")
+    output = MusicOutput(title=recognition_result["title"], artist=recognition_result['artist'], related_tracks=related_tracks)
+    # # 8. Optionally, fetch related songs
+    # try:
+    #     related_songs = await get_related_songs(track_id=track_id, limit=5, offset=0)
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=f"Failed to fetch related songs: {str(e)}")
 
-    # 7. Validate/convert track ID
-    try:
-        track_id = int(track_id_str)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid track ID format from Shazam.")
-
-    # 8. Optionally, fetch related songs
-    try:
-        related_songs = await get_related_songs(track_id=track_id, limit=5, offset=0)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch related songs: {str(e)}")
-
-    return {
-        "recognition_result": recognition_result,
-        "track_id": track_id,
-        "related_songs": related_songs,
-    }
+    return output

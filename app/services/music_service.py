@@ -36,9 +36,15 @@ async def recognize_song_via_shazam(audio_file_path: str) -> Dict:
     """
     shazam = Shazam()
     try:
-        # The 'recognize' method is an async method from shazamio that identifies audio
         out = await shazam.recognize(audio_file_path)
-        return out
+        print(out)
+        if len(out["matches"]) == 0:
+            raise RuntimeError(f"No Matches {e}") 
+        else:
+            top_match = out["track"]
+            title = top_match["title"]
+            artist = top_match["subtitle"]
+            return {"title": title, "artist": artist}
     except Exception as e:
         # Raise or handle the exception as needed
         raise RuntimeError(f"Error during Shazam recognition: {e}")
