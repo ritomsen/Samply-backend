@@ -3,8 +3,16 @@ from typing import Optional
 
 
 class MusicOutput(BaseModel):
-    title: str
+    song: str
     artist: str
-    related_tracks: list[str]
+    img_url: Optional[str] = None
     # album: Optional[str] = None
     # released: Optional[str] = None
+
+class MusicSample(BaseModel):
+    song: str
+    artist: str
+    year: str
+
+class OutputSamples(BaseModel):
+    samples: list[MusicSample]

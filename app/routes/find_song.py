@@ -2,11 +2,13 @@ import os
 import uuid
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import Optional
-from ..schemas.music import MusicOutput
+from ..schemas.music import MusicOutput, OutputSamples
 from ..services.music_service import (
     recognize_song_via_shazam,
-    get_related_songs
+    scrape_page,
+    scrape_sample_page
 )
+
 
 router = APIRouter()
 
@@ -54,9 +56,11 @@ async def recognize_song(file: UploadFile = File(...)):
     if os.path.exists(temp_filepath):
         os.remove(temp_filepath)
 
-    related_tracks = []
+    song = recognition_result["title"]
+    artist = recognition_result['artist']
+    img_url = recognition_result['img_url']
 
-    output = MusicOutput(title=recognition_result["title"], artist=recognition_result['artist'], related_tracks=related_tracks)
+    output = MusicOutput(song=song, artist=artist, img_url=img_url)
     # # 8. Optionally, fetch related songs
     # try:
     #     related_songs = await get_related_songs(track_id=track_id, limit=5, offset=0)
@@ -64,3 +68,29 @@ async def recognize_song(file: UploadFile = File(...)):
     #     raise HTTPException(status_code=500, detail=f"Failed to fetch related songs: {str(e)}")
 
     return output
+
+@router.get("/scrape-samples/")
+async def scrape_samples(song_title: str, artist: str):
+    """
+    Scrape data from the web
+    """
+    try:
+        # Try to scrape samples from the web first, if it fails then try to get name from search page
+        song = song_title
+        artist = artist
+
+        samples = await scrape_sample_page(song, artist)
+        # Get the name and artist from the search page if the samples are not found
+        if len(samples) == 0:
+            data = await scrape_page(song, artist)
+            song = data['song']
+            artist = data['artist']
+            samples = await scrape_sample_page(song, artist)
+        output = OutputSamples(samples=samples)
+        return output
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to scrape samples: {str(e)}"
+        )
+
