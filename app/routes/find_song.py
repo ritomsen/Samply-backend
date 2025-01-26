@@ -28,6 +28,7 @@ async def recognize_song(file: UploadFile = File(...)):
     Receives an audio file from the client, saves it temporarily,
     recognizes it with Shazam, and returns the recognized track data.
     """
+
     # 1. Validate file content type (basic check)
     if not file.content_type.startswith("audio/"):
         raise HTTPException(status_code=400, detail="File must be an audio type.")
@@ -78,7 +79,6 @@ async def scrape_samples(song_title: str, artist: str):
         # Try to scrape samples from the web first, if it fails then try to get name from search page
         song = song_title
         artist = artist
-
         samples = await scrape_sample_page(song, artist)
         # Get the name and artist from the search page if the samples are not found
         if len(samples) == 0:

@@ -118,24 +118,35 @@ async def scrape_sample_page(song_title: str, artist: str) -> dict:
         
         await page.goto(url)
         
-        # WHAT IF JUST ONE SONG
         samples = page.locator("section.subsection", has_text="Contains samples").first
         await samples.wait_for(timeout=10000);
         
+        img_elements = await samples.locator("img").all()
+        img_urls = []
+        for img in img_elements:
+            src = await img.get_attribute('src')
+            img_urls.append(src)
+
         parsed_samples = await samples.inner_text()
-
-        # 6. Close the browser
-        await browser.close()
-
-        # s = []
-        pattern = r'\n\s*\n\s*(.*?)\n\s*\t(.*?)\t([^\t]*)\t'
         
-        # Find all matches
+        await browser.close()
+        pattern = r'Contains samples of (\d+) songs'
+        
+        num_samples = re.search(pattern, parsed_samples, re.IGNORECASE)
+        if num_samples:
+            num_samples = int(num_samples.group(1))
+        else:
+            num_samples = 0
+
+        # Go to Samples page
+        if num_samples > 3:
+            pass
+
+        pattern = r'\n\s*\n\s*(.*?)\n\s*\t(.*?)\t([^\t]*)\t(.*?)\n'
         matches = re.findall(pattern, parsed_samples)
         
-        # Create the desired list format
-        # 7. Return scraped info
-        return [
-            {"song": song.strip(), "artist": artist.strip(), "year": year.strip()}
-            for song, artist, year in matches
-        ]
+        output = []
+        for i in range(len(matches)):
+            output.append({"song": matches[i][0].strip(), "artist": matches[i][1].strip(), "year": matches[i][2].strip(), "element": matches[i][3].strip(), "img_url": "https://www.whosampled.com" + img_urls[i]})
+
+        return output
