@@ -1,3 +1,8 @@
 curl -X POST \
      -F "file=@rakim.mp3;type=audio/mpeg " \
      http://localhost:8000/music/
+
+
+curl -G "http://localhost:8000/music/scrape-samples/" \
+  --data-urlencode "song_title=YourSongTitle" \
+  --data-urlencode "artist=YourArtistName"

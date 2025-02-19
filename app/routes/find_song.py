@@ -75,22 +75,36 @@ async def scrape_samples(song_title: str, artist: str):
     """
     Scrape data from the web
     """
+    # Try to scrape samples straight from guessing page name first, if it fails then try to get name from search page
+    song = song_title
+    artist = artist
     try:
-        # Try to scrape samples from the web first, if it fails then try to get name from search page
-        song = song_title
-        artist = artist
         samples = await scrape_sample_page(song, artist)
-        # Get the name and artist from the search page if the samples are not found
-        if len(samples) == 0:
-            data = await scrape_page(song, artist)
-            song = data['song']
-            artist = data['artist']
-            samples = await scrape_sample_page(song, artist)
-        output = OutputSamples(samples=samples)
-        return output
     except Exception as e:
         raise HTTPException(
-            status_code=500,
+        status_code=404, 
+        detail=f"No Samples Found: {str(e)}"
+    )
+    # Get the name and artist from the search page if the samples are not found
+    if len(samples) == 0:
+        try:
+            data = await scrape_page(song, artist)
+        except Exception as e:
+            raise HTTPException(
+            status_code=404, 
+            detail=f"No Samples Found in Search Results, {str(e)}"
+        )
+        song = data['song']
+        artist = data['artist']
+        print(song,artist)
+        try:
+            samples = await scrape_sample_page(song, artist)
+        except Exception as e:
+            raise HTTPException(
+            status_code=500, 
             detail=f"Failed to scrape samples: {str(e)}"
         )
+    output = OutputSamples(samples=samples)
+    return output
+ 
 
